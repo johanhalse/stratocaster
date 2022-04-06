@@ -9,6 +9,7 @@ module Stratocaster
         acl: "public-read",
         body: file,
         bucket: Stratocaster.config.cloud_config[:bucket],
+        content_type: "image/jpeg",
         key: filename
       ).etag.present?
     end
