@@ -9,7 +9,7 @@ module Stratocaster
           variant_name = variant.first
           operations = variant.last
 
-          processed_image = ImageProcessing::Vips.source(download_image(filename)).apply(operations).call
+          processed_image = ImageProcessing::MiniMagick.source(download_image(filename)).apply(operations).call
           upload_image(processed_image, strat_md5(filename, variant_name))
         end
       end
