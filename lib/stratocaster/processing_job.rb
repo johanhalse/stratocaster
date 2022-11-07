@@ -2,6 +2,8 @@ module Stratocaster
   class ProcessingJob < ActiveJob::Base
     queue_as :stratocaster_jobs
 
+    self.priority = 2
+
     def perform(obj)
       obj.strattachments.each_key do |base_name|
         filename = obj.send("#{base_name}_filename")
