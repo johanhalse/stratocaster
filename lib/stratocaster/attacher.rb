@@ -33,7 +33,8 @@ module Stratocaster
 
           variant = strattachments[base_name].find { |v| v.first == format_name }
           operations = variant.last
-          { width: operations[:resize_to_fill].first, height: operations[:resize_to_fill].last }
+          dim = operations.fetch(:resize_to_fill, operations.fetch(:resize_and_pad, nil))
+          { width: dim.first, height: dim.last }
         end
       end
     end
