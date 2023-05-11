@@ -1,16 +1,28 @@
 module Stratocaster
   module CloudUploader
     def upload_strattachment_originals
-      strattachments.each_key do |file|
-        next unless send(file)
+      strattachments.each_key do |f|
+        file = send(f)
+        next unless file
 
-        filename = strat_base_md5(file)
-        update("#{file}_filename" => filename) if strat_upload(file, filename)
+        filename = strat_base_md5(f)
+        update({ "#{f}_filename" => filename, "#{f}_metadata" => image_size(file) }) if strat_upload(file, filename)
       end
     end
 
     def strat_upload(file, filename)
-      Stratocaster::CloudClient.upload(send(file), filename)
+      Stratocaster::CloudClient.upload(file, filename)
+    end
+
+    private
+
+    def image_size(file)
+      dimensions = `$(which convert) -auto-orient "#{file.path}" -format %wx%h info:`.split("x")
+      return {} if dimensions.blank?
+
+      { width: dimensions.first.to_i, height: dimensions.last.to_i }
+    rescue StandardError => _e
+      {}
     end
   end
 end

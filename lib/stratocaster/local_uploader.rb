@@ -4,16 +4,28 @@ module Stratocaster
       FileUtils.mkdir_p("public/images")
 
       strattachments.each_key do |f|
-        next unless send(f)
+        file = send(f)
+        next unless file
 
         filename = strat_base_md5(f)
-        strat_upload(f, filename)
-        update("#{f}_filename" => filename)
+        strat_upload(file, filename)
+        update({ "#{f}_filename" => filename, "#{f}_metadata" => image_size(file) })
       end
     end
 
     def strat_upload(file, filename)
-      FileUtils.cp(send(file), "public/images/#{filename}")
+      FileUtils.cp(file, "public/images/#{filename}")
+    end
+
+    private
+
+    def image_size(file)
+      dimensions = `$(which convert) -auto-orient "#{file.path}" -format %wx%h info:`.split("x")
+      return {} if dimensions.blank?
+
+      { width: dimensions.first.to_i, height: dimensions.last.to_i }
+    rescue StandardError => _e
+      {}
     end
   end
 end
