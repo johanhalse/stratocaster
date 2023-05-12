@@ -28,13 +28,12 @@ module Stratocaster
         end
 
         define_method "#{base_name}_#{format_name}_dimensions" do
-          base_filename = send("#{base_name}_filename")
-          return {} if base_filename.nil?
-
-          variant = strattachments[base_name].find { |v| v.first == format_name }
-          operations = variant.last
-          o = [:resize_to_fill, :resize_and_pad, :resize_to_limit].find { operations[_1] }
-          { width: operations[o].first, height: operations[o].last }
+          metadata = send("#{base_name}_metadata")[format_name]
+          metadata.presence || begin
+            ops = %i[resize_to_fill resize_to_limit resize_and_pad]
+            values = kwargs.fetch(ops.find { kwargs.key?(_1) }, {})
+            { width: values.first, height: values.last }
+          end
         end
       end
     end
