@@ -28,7 +28,7 @@ module Stratocaster
         end
 
         define_method "#{base_name}_#{format_name}_dimensions" do
-          metadata = send("#{base_name}_metadata")[format_name]
+          metadata = send("#{base_name}_metadata")[format_name.to_s]
           metadata.presence || begin
             ops = %i[resize_to_fill resize_to_limit resize_and_pad]
             values = kwargs.fetch(ops.find { kwargs.key?(_1) }, {})
