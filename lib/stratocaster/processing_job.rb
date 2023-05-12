@@ -26,7 +26,7 @@ module Stratocaster
 
     def set_dimension_metadata(obj, base_name, variant_name, processed_image)
       dimensions = `$(which convert) -auto-orient "#{processed_image.path}" -format %wx%h info:`.split("x")
-      variant_metadata = { width: dimensions.first, height: dimensions.last }
+      variant_metadata = { width: dimensions.first.to_i, height: dimensions.last.to_i }
       m = obj.send("#{base_name}_metadata")
       obj.send("#{base_name}_metadata=", m.merge(variant_name => variant_metadata))
     end
