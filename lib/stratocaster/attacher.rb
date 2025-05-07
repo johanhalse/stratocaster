@@ -10,7 +10,7 @@ module Stratocaster
         strattachments.merge!(base_name => [])
         block.call(base_name)
         before_commit :upload_strattachment_originals
-        after_commit :schedule_processing_job
+        after_save :schedule_processing_job
       end
 
       def strattachments
