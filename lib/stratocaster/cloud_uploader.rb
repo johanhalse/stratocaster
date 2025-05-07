@@ -5,6 +5,7 @@ module Stratocaster
         file = send(f)
         next unless file
 
+        @perform_processing_job = true
         filename = strat_base_md5(f)
         update({ "#{f}_filename" => filename, "#{f}_metadata" => image_size(file) }) if strat_upload(file, filename)
       end

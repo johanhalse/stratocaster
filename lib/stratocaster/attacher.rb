@@ -10,7 +10,7 @@ module Stratocaster
         strattachments.merge!(base_name => [])
         block.call(base_name)
         before_commit :upload_strattachment_originals
-        after_save :schedule_processing_job
+        after_commit :perform_processing_job
       end
 
       def strattachments
@@ -53,10 +53,8 @@ module Stratocaster
         self.class.strattachments
       end
 
-      def schedule_processing_job
-        return unless strattachments.keys.any? { |a| send("saved_change_to_#{a}_filename?") }
-
-        Stratocaster::ProcessingJob.perform_later(self)
+      def perform_processing_job
+        Stratocaster::ProcessingJob.perform_later(self) if @perform_processing_job
       end
 
       def strat_base_md5(base_name)
