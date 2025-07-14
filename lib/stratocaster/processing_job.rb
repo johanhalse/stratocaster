@@ -9,16 +9,18 @@ module Stratocaster
         filename = obj.send("#{base_name}_filename")
         next if filename.blank?
 
+        original_image = download_image(filename)
         obj.strattachments[base_name].each do |variant|
           variant_name = variant.first
           operations = variant.last
 
-          processed_image = ImageProcessing::MiniMagick.source(download_image(filename)).apply(operations).call
+          processed_image = ImageProcessing::Vips.source(original_image).apply(operations).call
           set_dimension_metadata(obj, base_name, variant_name, processed_image)
           upload_image(processed_image, strat_md5(filename, variant_name))
         end
 
         obj.save!
+        destroy_downloaded_image(filename)
       end
     end
 
@@ -29,6 +31,10 @@ module Stratocaster
       variant_metadata = { width: dimensions.first.to_i, height: dimensions.last.to_i }
       m = obj.send("#{base_name}_metadata")
       obj.send("#{base_name}_metadata=", m.merge(variant_name => variant_metadata))
+    end
+
+    def destroy_downloaded_image(filename)
+      File.delete("tmp/#{filename}") if Stratocaster.config.uploader == :cloud
     end
 
     def download_image(filename)
