@@ -24,10 +24,8 @@ module Stratocaster
     private
 
     def image_size(file)
-      dimensions = `$(which convert) -auto-orient "#{file.path}" -format %wx%h info:`.split("x")
-      return {} if dimensions.blank?
-
-      { width: dimensions.first.to_i, height: dimensions.last.to_i }
+      image = Vips::Image.new_from_file(file.path, access: :sequential)
+      { width: image.width, height: image.height }
     rescue StandardError => _e
       {}
     end

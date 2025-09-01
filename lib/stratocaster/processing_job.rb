@@ -27,10 +27,10 @@ module Stratocaster
     private
 
     def set_dimension_metadata(obj, base_name, variant_name, processed_image)
-      dimensions = `$(which convert) -auto-orient "#{processed_image.path}" -format %wx%h info:`.split("x")
-      variant_metadata = { width: dimensions.first.to_i, height: dimensions.last.to_i }
+      image = Vips::Image.new_from_file(processed_image.path, access: :sequential)
+      variant_metadata = { width: image.width, height: image.height }
       m = obj.send("#{base_name}_metadata")
-      obj.send("#{base_name}_metadata=", m.merge(variant_name => variant_metadata))
+      obj.send("#{base_name}_metadata=", m.merge(variant_name.to_s => variant_metadata))
     end
 
     def destroy_downloaded_image(filename)
