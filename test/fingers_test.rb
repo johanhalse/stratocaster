@@ -30,4 +30,16 @@ class FingersControllerTest < ActionDispatch::IntegrationTest
     Finger.create!
     assert_enqueued_jobs 0
   end
+
+  test "hero_image_metadata gets properly set when a file is uploaded" do
+    jpeg = fixture_file_upload("image.jpg", "image/jpeg")
+    finger = Finger.create!(hero_image: jpeg)
+    
+    assert finger.hero_image_metadata.present?
+    assert finger.hero_image_metadata.is_a?(Hash)
+    assert finger.hero_image_metadata["width"].present?
+    assert finger.hero_image_metadata["height"].present?
+    assert_equal 1848, finger.hero_image_metadata["width"]
+    assert_equal 1220, finger.hero_image_metadata["height"]
+  end
 end
