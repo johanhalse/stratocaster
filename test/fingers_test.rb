@@ -56,4 +56,76 @@ class FingersControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1848, finger.hero_image_metadata["width"]
     assert_equal 1220, finger.hero_image_metadata["height"]
   end
+
+  test "it deletes local files when record is destroyed" do
+    jpeg = fixture_file_upload("image.jpg", "image/jpeg")
+    finger = Finger.create!(hero_image: jpeg)
+    
+    perform_enqueued_jobs
+    finger.reload
+    
+    original_filename = finger.hero_image_filename
+    variant1_filename = finger.strat_md5(original_filename, :first)
+    variant2_filename = finger.strat_md5(original_filename, :second)
+    
+    # Verify files exist before destroy
+    assert File.exist?("public/images/#{original_filename}")
+    assert File.exist?("public/images/#{variant1_filename}")
+    assert File.exist?("public/images/#{variant2_filename}")
+    
+    # Destroy the record
+    finger.destroy!
+    
+    # Verify files are deleted after destroy
+    assert_not File.exist?("public/images/#{original_filename}")
+    assert_not File.exist?("public/images/#{variant1_filename}")
+    assert_not File.exist?("public/images/#{variant2_filename}")
+  end
+
+  test "it handles missing local files gracefully during destroy" do
+    jpeg = fixture_file_upload("image.jpg", "image/jpeg")
+    finger = Finger.create!(hero_image: jpeg)
+    
+    # Delete files manually to simulate missing files
+    FileUtils.rm_rf("public/images")
+    
+    # Should not raise an error when destroying
+    assert_nothing_raised do
+      finger.destroy!
+    end
+  end
+
+  test "it cleans up multiple image attachments on destroy" do
+    jpeg1 = fixture_file_upload("image.jpg", "image/jpeg")
+    jpeg2 = fixture_file_upload("image.jpg", "image/jpeg")
+    
+    finger = Finger.create!(hero_image: jpeg1, second_image: jpeg2)
+    
+    perform_enqueued_jobs
+    finger.reload
+    
+    hero_original = finger.hero_image_filename
+    hero_variant1 = finger.strat_md5(hero_original, :first)
+    hero_variant2 = finger.strat_md5(hero_original, :second)
+    
+    second_original = finger.second_image_filename
+    second_variant = finger.strat_md5(second_original, :another)
+    
+    # Verify all files exist
+    assert File.exist?("public/images/#{hero_original}")
+    assert File.exist?("public/images/#{hero_variant1}")
+    assert File.exist?("public/images/#{hero_variant2}")
+    assert File.exist?("public/images/#{second_original}")
+    assert File.exist?("public/images/#{second_variant}")
+    
+    # Destroy the record
+    finger.destroy!
+    
+    # Verify all files are deleted
+    assert_not File.exist?("public/images/#{hero_original}")
+    assert_not File.exist?("public/images/#{hero_variant1}")
+    assert_not File.exist?("public/images/#{hero_variant2}")
+    assert_not File.exist?("public/images/#{second_original}")
+    assert_not File.exist?("public/images/#{second_variant}")
+  end
 end

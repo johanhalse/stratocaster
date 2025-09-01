@@ -21,6 +21,10 @@ module Stratocaster
       Stratocaster::CloudClient.upload(file, filename)
     end
 
+    def strat_delete(filename)
+      Stratocaster::CloudClient.delete(filename)
+    end
+
     private
 
     def image_size(file)

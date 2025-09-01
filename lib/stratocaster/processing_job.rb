@@ -34,7 +34,10 @@ module Stratocaster
     end
 
     def destroy_downloaded_image(filename)
-      File.delete("tmp/#{filename}") if Stratocaster.config.uploader == :cloud
+      return unless Stratocaster.config.uploader == :cloud
+
+      file_path = "tmp/#{filename}"
+      File.delete(file_path) if File.exist?(file_path)
     end
 
     def download_image(filename)

@@ -21,6 +21,11 @@ module Stratocaster
       FileUtils.cp(file, "public/images/#{filename}")
     end
 
+    def strat_delete(filename)
+      file_path = "public/images/#{filename}"
+      FileUtils.rm_f(file_path) if File.exist?(file_path)
+    end
+
     private
 
     def image_size(file)
