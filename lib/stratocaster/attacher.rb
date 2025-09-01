@@ -9,7 +9,7 @@ module Stratocaster
         define_method("#{base_name}?") { send("#{base_name}_filename").present? }
         strattachments.merge!(base_name => [])
         block.call(base_name)
-        before_commit :upload_strattachment_originals
+        before_save :upload_strattachment_originals
         after_commit :perform_processing_job
       end
 

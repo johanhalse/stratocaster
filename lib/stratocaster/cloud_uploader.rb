@@ -7,7 +7,13 @@ module Stratocaster
 
         @perform_processing_job = true
         filename = strat_base_md5(f)
-        update({ "#{f}_filename" => filename, "#{f}_metadata" => image_size(file) }) if strat_upload(file, filename)
+
+        next unless strat_upload(file, filename)
+
+        assign_attributes(
+          "#{f}_filename" => filename,
+          "#{f}_metadata" => image_size(file)
+        )
       end
     end
 
