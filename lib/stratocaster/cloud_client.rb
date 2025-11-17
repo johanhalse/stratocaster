@@ -18,6 +18,8 @@ module Stratocaster
       FileUtils.mkdir_p("tmp")
       local_path = "tmp/#{filename}"
 
+      return File.open(local_path) if File.exist?(local_path)
+
       stratoclient.get_object(
         bucket: Stratocaster.config.cloud_config[:bucket],
         key: filename,
