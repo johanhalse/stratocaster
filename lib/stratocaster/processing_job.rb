@@ -17,6 +17,7 @@ module Stratocaster
           processed_image = ImageProcessing::Vips.source(original_image).apply(operations).call
           set_dimension_metadata(obj, base_name, variant_name, processed_image)
           upload_image(processed_image, strat_md5(filename, variant_name))
+          File.delete(processed_image)
         end
 
         obj.save!
