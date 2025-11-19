@@ -1,5 +1,7 @@
 module Stratocaster
   module CloudUploader
+    include BaseUploader
+
     def upload_strattachment_originals
       strattachments.each_key do |f|
         file = send(f)
@@ -8,7 +10,14 @@ module Stratocaster
         @perform_processing_job = true
         filename = strat_base_md5(f)
 
-        next unless strat_upload(file, filename)
+        # Resize the original image before uploading
+        resized_file = resize_original_image(file)
+        upload_success = strat_upload(resized_file, filename)
+
+        # Clean up temp file if it was created
+        resized_file.close! if resized_file.respond_to?(:close!) && resized_file != file
+
+        next unless upload_success
 
         assign_attributes(
           "#{f}_filename" => filename,
@@ -23,15 +32,6 @@ module Stratocaster
 
     def strat_delete(filename)
       Stratocaster::CloudClient.delete(filename)
-    end
-
-    private
-
-    def image_size(file)
-      image = Vips::Image.new_from_file(file.path, access: :sequential)
-      { width: image.width, height: image.height }
-    rescue StandardError => _e
-      {}
     end
   end
 end
