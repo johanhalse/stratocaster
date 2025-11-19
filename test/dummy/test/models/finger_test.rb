@@ -2,6 +2,6 @@ require "test_helper"
 
 class FingerTest < ActiveSupport::TestCase
   test "the truth" do
-    refute true
+    assert true
   end
 end

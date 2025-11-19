@@ -99,8 +99,11 @@ class CloudDestroyTest < ActionDispatch::IntegrationTest
   test "it handles missing cloud files gracefully" do
     jpeg = fixture_file_upload("image.jpg", "image/jpeg")
     finger = Finger.create!(hero_image: jpeg)
-    
+
     # Stub delete to return false (simulating missing files)
+    Stratocaster::CloudClient.singleton_class.class_eval do
+      remove_method :delete if method_defined?(:delete)
+    end
     Stratocaster::CloudClient.define_singleton_method(:delete) do |filename|
       false
     end
