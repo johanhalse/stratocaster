@@ -10,10 +10,8 @@ module Stratocaster
         next unless file
 
         @perform_processing_job = true
-        filename = strat_base_md5(f)
-
-        # Resize the original image before uploading
         resized_file = resize_original_image(file)
+        filename = strat_base_md5(file: resized_file)
         strat_upload(resized_file, filename)
 
         # Clean up temp file if it was created

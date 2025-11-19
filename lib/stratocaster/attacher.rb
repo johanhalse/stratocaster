@@ -58,8 +58,8 @@ module Stratocaster
         Stratocaster::ProcessingJob.perform_later(self) if @perform_processing_job
       end
 
-      def strat_base_md5(base_name)
-        "original_#{Digest::MD5.hexdigest(File.read(send(base_name).tempfile))}"
+      def strat_base_md5(file:)
+        "original_#{Digest::MD5.hexdigest(file.read)}"
       end
 
       def cleanup_strattachments
