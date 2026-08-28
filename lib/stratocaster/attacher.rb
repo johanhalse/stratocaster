@@ -10,8 +10,8 @@ module Stratocaster
         strattachments.merge!(base_name => [])
         block.call(base_name)
         before_save :upload_strattachment_originals
-        after_commit :perform_processing_job
-        after_destroy :cleanup_strattachments
+        after_commit :perform_processing_job, on: %i[create update]
+        after_destroy_commit :purge_strattachments
       end
 
       def strattachments
@@ -62,20 +62,19 @@ module Stratocaster
         "original_#{Digest::MD5.hexdigest(file.read)}"
       end
 
-      def cleanup_strattachments
-        strattachments.each_key do |base_name|
+      # Deleting inline would hold the destroy transaction, and every row lock it has taken, open across one
+      # HTTP round trip per original and variant -- long enough for a concurrent writer to deadlock against
+      # it. Collect the keys and let a job do the deleting once the transaction has committed, so a rollback
+      # also stops us from orphaning rows that still point at deleted files.
+      def purge_strattachments
+        filenames = strattachments.flat_map do |base_name, variants|
           filename = send("#{base_name}_filename")
-          next unless filename.present?
+          next [] if filename.blank?
 
-          # Delete original
-          strat_delete(filename)
-          
-          # Delete all variants for this attachment
-          strattachments[base_name].each do |variant_name, _options|
-            variant_filename = strat_md5(filename, variant_name)
-            strat_delete(variant_filename)
-          end
+          [filename] + variants.map { |variant_name, _options| strat_md5(filename, variant_name) }
         end
+
+        Stratocaster::PurgeJob.perform_later(filenames) if filenames.any?
       end
     end
   end

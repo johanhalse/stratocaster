@@ -74,7 +74,7 @@ class FingersControllerTest < ActionDispatch::IntegrationTest
     assert File.exist?("public/images/#{variant2_filename}")
     
     # Destroy the record
-    finger.destroy!
+    perform_enqueued_jobs { finger.destroy! }
     
     # Verify files are deleted after destroy
     assert_not File.exist?("public/images/#{original_filename}")
@@ -91,7 +91,7 @@ class FingersControllerTest < ActionDispatch::IntegrationTest
     
     # Should not raise an error when destroying
     assert_nothing_raised do
-      finger.destroy!
+      perform_enqueued_jobs { finger.destroy! }
     end
   end
 
@@ -119,7 +119,7 @@ class FingersControllerTest < ActionDispatch::IntegrationTest
     assert File.exist?("public/images/#{second_variant}")
     
     # Destroy the record
-    finger.destroy!
+    perform_enqueued_jobs { finger.destroy! }
     
     # Verify all files are deleted
     assert_not File.exist?("public/images/#{hero_original}")

@@ -87,7 +87,7 @@ class CloudDestroyTest < ActionDispatch::IntegrationTest
     @delete_calls.clear
     
     # Destroy the record - should trigger cleanup
-    finger.destroy!
+    perform_enqueued_jobs { finger.destroy! }
     
     # Verify delete was called for original and variants
     assert_includes @delete_calls, original_filename
@@ -110,7 +110,7 @@ class CloudDestroyTest < ActionDispatch::IntegrationTest
     
     # Should not raise an error when destroying
     assert_nothing_raised do
-      finger.destroy!
+      perform_enqueued_jobs { finger.destroy! }
     end
   end
   
@@ -133,7 +133,7 @@ class CloudDestroyTest < ActionDispatch::IntegrationTest
     @delete_calls.clear
     
     # Destroy the record
-    finger.destroy!
+    perform_enqueued_jobs { finger.destroy! }
     
     # Verify all files were deleted
     assert_includes @delete_calls, hero_original
@@ -142,5 +142,44 @@ class CloudDestroyTest < ActionDispatch::IntegrationTest
     assert_includes @delete_calls, second_original
     assert_includes @delete_calls, second_variant
     assert_equal 5, @delete_calls.length
+  end
+
+  test "it defers the deletes to a job rather than doing them in the destroy transaction" do
+    jpeg = fixture_file_upload("image.jpg", "image/jpeg")
+    finger = Finger.create!(hero_image: jpeg)
+
+    perform_enqueued_jobs
+
+    @delete_calls.clear
+
+    finger.destroy!
+
+    assert_empty @delete_calls, "destroy should not delete files while its transaction is open"
+    assert_enqueued_jobs 1, only: Stratocaster::PurgeJob
+
+    perform_enqueued_jobs
+
+    assert_equal 3, @delete_calls.length
+  end
+
+  test "it leaves the files alone when the destroy is rolled back" do
+    jpeg = fixture_file_upload("image.jpg", "image/jpeg")
+    finger = Finger.create!(hero_image: jpeg)
+
+    perform_enqueued_jobs
+
+    @delete_calls.clear
+
+    assert_no_enqueued_jobs only: Stratocaster::PurgeJob do
+      Finger.transaction do
+        finger.destroy!
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    perform_enqueued_jobs
+
+    assert_empty @delete_calls
+    assert Finger.exists?(finger.id)
   end
 end
