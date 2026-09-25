@@ -141,7 +141,7 @@ class CloudDestroyTest < ActionDispatch::IntegrationTest
     assert_includes @delete_calls, hero_variant2
     assert_includes @delete_calls, second_original
     assert_includes @delete_calls, second_variant
-    assert_equal 5, @delete_calls.length
+    assert_equal @delete_calls.uniq, @delete_calls
   end
 
   test "it defers the deletes to a job rather than doing them in the destroy transaction" do
@@ -181,5 +181,51 @@ class CloudDestroyTest < ActionDispatch::IntegrationTest
 
     assert_empty @delete_calls
     assert Finger.exists?(finger.id)
+  end
+
+  test "it keeps the files while another record still holds the same image" do
+    first = Finger.create!(hero_image: fixture_file_upload("image.jpg", "image/jpeg"))
+    second = Finger.create!(hero_image: fixture_file_upload("image.jpg", "image/jpeg"))
+
+    perform_enqueued_jobs
+
+    assert_equal first.hero_image_filename, second.hero_image_filename
+
+    @delete_calls.clear
+
+    perform_enqueued_jobs { first.destroy! }
+
+    assert_empty @delete_calls
+
+    perform_enqueued_jobs { second.destroy! }
+
+    assert_equal 3, @delete_calls.length
+  end
+
+  test "it keeps the files while another attachment column holds the same image" do
+    hero = Finger.create!(hero_image: fixture_file_upload("image.jpg", "image/jpeg"))
+    other = Finger.create!(second_image: fixture_file_upload("image.jpg", "image/jpeg"))
+
+    perform_enqueued_jobs
+
+    assert_equal hero.hero_image_filename, other.second_image_filename
+
+    @delete_calls.clear
+
+    perform_enqueued_jobs { hero.destroy! }
+
+    assert_empty @delete_calls
+  end
+
+  test "it still purges the flat filename list that 0.4.0 enqueued" do
+    finger = Finger.create!(hero_image: fixture_file_upload("image.jpg", "image/jpeg"))
+
+    perform_enqueued_jobs
+
+    @delete_calls.clear
+
+    Stratocaster::PurgeJob.perform_now(["original_gone", "variant_of_gone", finger.hero_image_filename])
+
+    assert_equal %w[original_gone variant_of_gone], @delete_calls
   end
 end

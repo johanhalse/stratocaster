@@ -4,8 +4,12 @@ module Stratocaster
 
     self.priority = 3
 
-    def perform(filenames)
-      filenames.each { |filename| purge(filename) }
+    def perform(files)
+      files.each do |original, variants|
+        next if Stratocaster.referenced?(original)
+
+        [original, *variants].each { |filename| purge(filename) }
+      end
     end
 
     private

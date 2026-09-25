@@ -8,6 +8,7 @@ module Stratocaster
 
         define_method("#{base_name}?") { send("#{base_name}_filename").present? }
         strattachments.merge!(base_name => [])
+        Stratocaster.attachments << [name, "#{base_name}_filename"] if name
         block.call(base_name)
         before_save :upload_strattachment_originals
         after_commit :perform_processing_job, on: %i[create update]
@@ -67,14 +68,15 @@ module Stratocaster
       # it. Collect the keys and let a job do the deleting once the transaction has committed, so a rollback
       # also stops us from orphaning rows that still point at deleted files.
       def purge_strattachments
-        filenames = strattachments.flat_map do |base_name, variants|
+        files = Hash.new { |hash, filename| hash[filename] = [] }
+        strattachments.each do |base_name, variants|
           filename = send("#{base_name}_filename")
-          next [] if filename.blank?
+          next if filename.blank?
 
-          [filename] + variants.map { |variant_name, _options| strat_md5(filename, variant_name) }
+          files[filename].concat(variants.map { |variant_name, _options| strat_md5(filename, variant_name) })
         end
 
-        Stratocaster::PurgeJob.perform_later(filenames) if filenames.any?
+        Stratocaster::PurgeJob.perform_later(files.to_h) if files.any?
       end
     end
   end
